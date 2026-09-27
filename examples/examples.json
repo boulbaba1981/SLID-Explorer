@@ -1,0 +1,86 @@
+[
+ {
+  "src": "examples/slid_59.jpg",
+  "thumb": "examples/slid_59_t.jpg",
+  "slid_file": "59.png",
+  "label": "Normal",
+  "short": "Normal"
+ },
+ {
+  "src": "examples/slid_302.jpg",
+  "thumb": "examples/slid_302_t.jpg",
+  "slid_file": "302.png",
+  "label": "Cataract",
+  "short": "Cataract"
+ },
+ {
+  "src": "examples/slid_373.jpg",
+  "thumb": "examples/slid_373_t.jpg",
+  "slid_file": "373.png",
+  "label": "Intraocular lens",
+  "short": "Intraocular lens"
+ },
+ {
+  "src": "examples/slid_446.jpg",
+  "thumb": "examples/slid_446_t.jpg",
+  "slid_file": "446.png",
+  "label": "Lens dislocation",
+  "short": "Lens dislocation"
+ },
+ {
+  "src": "examples/slid_584.jpg",
+  "thumb": "examples/slid_584_t.jpg",
+  "slid_file": "584.png",
+  "label": "Keratitis",
+  "short": "Keratitis"
+ },
+ {
+  "src": "examples/slid_657.jpg",
+  "thumb": "examples/slid_657_t.jpg",
+  "slid_file": "657.png",
+  "label": "Corneal scarring",
+  "short": "Corneal scarring"
+ },
+ {
+  "src": "examples/slid_749.jpg",
+  "thumb": "examples/slid_749_t.jpg",
+  "slid_file": "749.png",
+  "label": "Corneal dystrophy",
+  "short": "Corneal dystrophy"
+ },
+ {
+  "src": "examples/slid_1394.jpg",
+  "thumb": "examples/slid_1394_t.jpg",
+  "slid_file": "1394.png",
+  "label": "Corneal / Conjunctival tumor",
+  "short": "Corneal/conj. tumour"
+ },
+ {
+  "src": "examples/slid_1441.jpg",
+  "thumb": "examples/slid_1441_t.jpg",
+  "slid_file": "1441.png",
+  "label": "Pinguecula",
+  "short": "Pinguecula"
+ },
+ {
+  "src": "examples/slid_1678.jpg",
+  "thumb": "examples/slid_1678_t.jpg",
+  "slid_file": "1678.png",
+  "label": "Pterygium",
+  "short": "Pterygium"
+ },
+ {
+  "src": "examples/slid_1775.jpg",
+  "thumb": "examples/slid_1775_t.jpg",
+  "slid_file": "1775.png",
+  "label": "Subconjunctival hemorrhage",
+  "short": "Subconj. haemorrhage"
+ },
+ {
+  "src": "examples/slid_2113.jpg",
+  "thumb": "examples/slid_2113_t.jpg",
+  "slid_file": "2113.png",
+  "label": "Pigmented nevus",
+  "short": "Pigmented nevus"
+ }
+]
