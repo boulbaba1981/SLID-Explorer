@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLID Explorer</title>
+<meta name="description" content="Upload a slit-lamp photograph and see screening scores, 13 lesion scores and class activation maps from a leakage-aware SLID baseline. Runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M2 16C6 8 11 5 16 5s10 3 14 11c-4 8-9 11-14 11S6 24 2 16z' fill='%230b6e6e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23e0752d'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#workspace">Skip to analysis</a>
+
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#top" aria-label="SLID Explorer home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M2 16C6 8 11 5 16 5s10 3 14 11c-4 8-9 11-14 11S6 24 2 16z" fill="var(--brand)"/><circle cx="16" cy="16" r="6" fill="var(--surface)"/><circle cx="16" cy="16" r="3" fill="var(--accent)"/></svg>
+      <span>SLID&nbsp;Explorer</span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#workspace">Analyse</a>
+      <a href="#examples">Examples</a>
+      <a href="#model">Model card</a>
+      <a href="#about">About</a>
+    </nav>
+    <div class="top-actions">
+      <span class="ruo" title="Not a medical device">Research use only</span>
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="intro wrap">
+    <h1>See what the model sees in a slit-lamp photo</h1>
+    <p class="lede">Upload an anterior-segment image. A frozen EfficientNet-B0 with linear heads trained on the public SLID dataset scores the image for abnormality and 13 lesions, and shows where the evidence for each score lies.</p>
+    <p class="privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>Your image is processed on this device. Nothing is uploaded.</p>
+  </section>
+
+  <section id="workspace" class="workspace wrap" aria-label="Analysis workspace">
+    <!-- Image stage -->
+    <div class="card stage-card">
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Upload a slit-lamp image">
+        <svg class="drop-ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="9" width="38" height="30" rx="5"/><path d="M5 31l10-9 9 8 6-5 13 11"/><circle cx="33" cy="18" r="3.5"/></svg>
+        <p class="drop-title">Drop a slit-lamp photograph here</p>
+        <p class="drop-sub">JPEG or PNG, diffuse illumination works best. You can also paste an image.</p>
+        <div class="drop-btns">
+          <label class="btn primary">Choose image<input id="fileIn" type="file" accept="image/*" hidden></label>
+          <label class="btn ghost mobile-only">Take photo<input id="camIn" type="file" accept="image/*" capture="environment" hidden></label>
+        </div>
+        <a class="drop-link" href="#examples">or try one of 12 SLID examples</a>
+      </div>
+
+      <div id="stage" class="stage" hidden>
+        <div class="canvas-wrap">
+          <canvas id="view" width="768" height="576" aria-label="Uploaded image with heatmap overlay"></canvas>
+          <div id="busy" class="busy" hidden><span class="spinner"></span><span id="busyTxt">Analysing…</span></div>
+          <div class="cam-legend" id="camLegend" hidden>
+            <span id="camFor">Evidence map</span>
+            <span class="ramp" aria-hidden="true"></span>
+            <span class="ramp-lbl"><span>low</span><span>high</span></span>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="seg" role="radiogroup" aria-label="View mode">
+            <button role="radio" aria-checked="true" data-mode="overlay">Heatmap</button>
+            <button role="radio" aria-checked="false" data-mode="image">Image</button>
+          </div>
+          <label class="field">
+            <span>Map for</span>
+            <select id="camSel" aria-label="Lesion for heatmap"></select>
+          </label>
+          <label class="field slider">
+            <span>Opacity</span>
+            <input id="opacity" type="range" min="0" max="100" value="60" aria-label="Heatmap opacity">
+          </label>
+          <div class="tool-end">
+            <button class="btn ghost sm" id="dlBtn" title="Download the current view as PNG">Save view</button>
+            <label class="btn ghost sm">Replace<input id="fileIn2" type="file" accept="image/*" hidden></label>
+          </div>
+        </div>
+        <p class="crop-note" id="cropNote" hidden></p>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card results-card" aria-live="polite">
+      <div id="resEmpty" class="res-empty">
+        <div class="model-status" id="modelStatus">
+          <span class="dot"></span><span id="modelTxt">Loading model (16 MB, cached after first visit)…</span>
+          <div class="prog"><span id="modelBar"></span></div>
+        </div>
+        <h2>Results appear here</h2>
+        <ul class="howto">
+          <li><b>Screening score</b> for any abnormality, with its decision threshold.</li>
+          <li><b>13 lesion scores</b>, flagged when above a threshold set at 90% specificity.</li>
+          <li><b>Evidence maps</b> showing which regions pushed each score up.</li>
+        </ul>
+      </div>
+
+      <div id="res" hidden>
+        <div id="oodBanner" class="banner warn" hidden role="alert">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>
+          <div><b>This image does not look like a SLID slit-lamp photograph.</b> Similarity to the training data is <span id="oodSim"></span> (typical ≥ <span id="oodThr"></span>). The scores below are unreliable.</div>
+        </div>
+
+        <div class="screen" id="screen">
+          <div class="screen-top">
+            <span class="eyebrow">Screening</span>
+            <span class="pill" id="screenPill"></span>
+          </div>
+          <div class="screen-main">
+            <div class="gauge" id="gauge" aria-hidden="true"><svg viewBox="0 0 120 70"><path class="g-track" d="M10 62a50 50 0 0 1 100 0"/><path class="g-val" id="gVal" d="M10 62a50 50 0 0 1 100 0"/><line id="gThr" class="g-thr" x1="0" y1="0" x2="0" y2="0"/></svg><span class="g-num" id="gNum"></span></div>
+            <div>
+              <p class="screen-title" id="screenTitle"></p>
+              <p class="screen-sub" id="screenSub"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="findings-head">
+          <h2>Lesion findings</h2>
+          <div class="seg sm" role="radiogroup" aria-label="Sort findings">
+            <button role="radio" aria-checked="true" data-sort="score">Most likely</button>
+            <button role="radio" aria-checked="false" data-sort="region">By region</button>
+          </div>
+        </div>
+        <p class="scale-note">Bars use a log-odds scale. The tick marks each lesion's threshold. Select a row to show its evidence map.</p>
+        <ol id="findings" class="findings"></ol>
+        <p class="fineprint">Scores come from class-balanced logistic heads and are not calibrated probabilities. Compare each score with its own threshold, not with 50%. Each threshold allows 10% false positives, so across 13 lesions about one false flag per image is expected.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="examples" class="wrap block">
+    <div class="block-head">
+      <h2>Try a SLID example</h2>
+      <p>Twelve images from the public SLID dataset, one per finding. They were part of the training data, so a correct result here shows how the tool works, not how accurate it is.</p>
+    </div>
+    <div id="gallery" class="gallery"></div>
+    <p class="credit">Images: SLID dataset, Xu et al., <i>Front. Digit. Health</i> 7 (2026) 1716501, <a href="https://github.com/xumingyu-hub/SLID" rel="noopener">github.com/xumingyu-hub/SLID</a>, licensed CC&nbsp;BY&nbsp;4.0. Downscaled to 512&nbsp;px; no other changes.</p>
+  </section>
+
+  <section id="model" class="wrap block">
+    <div class="block-head">
+      <h2>Model card</h2>
+      <p>Metrics are out-of-fold results from 5-fold cross-validation in which images of the same eye were kept in the same fold. SLID has no patient identifiers, so eye groups were rebuilt from consecutive files with the same labels and near-identical image features.</p>
+    </div>
+    <div class="mc-grid">
+      <dl class="facts" id="facts"></dl>
+      <div class="table-wrap">
+        <table class="mtable" id="mtable">
+          <thead><tr><th scope="col">Target</th><th scope="col">Region</th><th scope="col" class="num">Images</th><th scope="col" class="num">AUROC</th><th scope="col" class="num">Sensitivity<br><small>at 90% spec.</small></th><th scope="col" class="num">Threshold</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="limits">
+      <h3>Known limitations</h3>
+      <ul>
+        <li><b>Single source.</b> All training images come from one public dataset. Performance on other cameras, populations or illumination is unknown.</li>
+        <li><b>Shortcuts in the data.</b> In SLID, image resolution and even the cornea annotation shape are associated with the diagnosis. The model may use acquisition cues that do not carry over to new images.</li>
+        <li><b>Weak lesions.</b> Sensitivity at 90% specificity is below 55% for pinguecula and corneal scarring, and the evidence maps for pinguecula often miss the lesion.</li>
+        <li><b>Coarse maps.</b> Evidence maps come from a 12 × 9 feature grid. They show the region, not the lesion border.</li>
+        <li><b>Not a diagnosis.</b> This tool is for research and teaching. It must not guide the care of any patient.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="about" class="wrap block about">
+    <div>
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li><b>Prepare.</b> The image is resized to 384 × 288 pixels in your browser, as in training. Images far from the 4:3 shape are centre-cropped first.</li>
+        <li><b>Encode.</b> An ImageNet EfficientNet-B0, kept frozen, turns the image into 1,280 feature maps.</li>
+        <li><b>Score.</b> Fourteen linear heads, one for screening and one per lesion, score the averaged features.</li>
+        <li><b>Explain.</b> Because the heads are linear, each head applied to every map location gives an exact class activation map.</li>
+        <li><b>Check.</b> The image features are compared with the training data. A low similarity triggers a warning.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Cite</h2>
+      <p class="cite">B. Ben Ammar. Shortcuts and leakage in public slit-lamp benchmarks. Manuscript submitted, 2026.</p>
+      <p class="cite">M. Xu, Y. Sun, H. Cheng, Y. Zhou, N. Maimaiti, P. Chen, et al. SLID: a slit-lamp image dataset for deep learning-based anterior eye anatomical segmentation and multi-lesion detection. <i>Front. Digit. Health</i> 7 (2026) 1716501.</p>
+      <p class="muted">Inference uses ONNX Runtime Web (MIT licence).</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-in">
+    <p><b>Not a medical device.</b> SLID Explorer has not been clinically validated and must not be used for diagnosis or treatment.</p>
+    <p>© 2026 Boulbaba Ben Ammar · Code MIT · Example images CC BY 4.0 (SLID)</p>
+  </div>
+</footer>
+
+<script src="vendor/ort.wasm.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
